@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Home</title>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="/assets/js/bootstrap.min.css">
+    <script src="/assets/js/Chart.min.js"></script>
+    <!-- Font Awesome JS -->
+    <script defer src="/assets/js/fontawesome-solid.js"></script>
+    <script defer src="/assets/js/fontawesome.js"></script>
+    <link rel="stylesheet" href="/assets/style.css">
+
+    <!-- external libs from cdnjs -->
+    <link rel="stylesheet" type="text/css" href="/assets/js/cloudflare-c3.min.css">
+    <script type="text/javascript" src="/assets/js/cloudflare-d3.min.js"></script>
+    <script type="text/javascript" src="/assets/js/cloudflare-c3.min.js"></script>
+    <script type="text/javascript" src="/assets/js/cloudflare-jquery.min.js"></script>
+    <script type="text/javascript" src="/assets/js/cloudflare-jquery-ui.min.js"></script>
+    <script type="text/javascript" src="/assets/js/cloudflare-jquery.csv-0.71.min.js"></script>
+    <script src="/assets/js/cloudflare-popper.min.js"></script>
+    <script src="/assets/js/bootstrapcdn-bootstrap.min.js"></script>
+    <script type="text/javascript" src="/assets/js/cdn.datatables-jquery.dataTables.min.js"></script>
+</head>
+<body>
+<script>
+    function getLocalDate(utcDate) {
+        var localDate = new Date(utcDate);
+        document.write(localDate.toLocaleString());
+    }
+    $(document).ready(function () {
+        $('#sidebarCollapse').on('click', function () {
+            $('#sidebar').toggleClass('active');
+            $(this).toggleClass('active');
+        });
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+</script>
+
+<div class="wrapper">
+    <!-- Sidebar Holder -->
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <h3>
+                FLINT
+            </h3>
+            <p>Enteric Fermentation</p>
+        </div>
+
+        <ul class="list-unstyled components">
+            <li>
+                <button data-toggle="modal" data-target="#uploadExcelModal">
+                    <div data-toggle="tooltip" data-placement="right" title="You can also load your simulation file from an Excel file">Load from Excel</div>
+                </button>
+            </li>
+            <li>
+                <button data-toggle="modal" data-target="#uploadDBModal">
+                    <div data-toggle="tooltip" data-placement="right" title="You can also load your simulation file from a database file">Load from database</div>
+                </button>
+            </li>
+            <li>
+                <button data-toggle="modal" data-target="#uploadJSONModal">
+                    <div data-toggle="tooltip" data-placement="right" title="You can also load your simulation file from a json file">Load from json</div>
+                </button>
+            </li>
+            <li>
+                <form method="post" action="/logout_google?provider=google">
+                    <button type="submit">Logout</button>
+                </form>
+            </li>
+        </ul>
+
+        <!-- Example of another kind of styling -->
+       <ul class="list-unstyled CTAs">
+            <li>
+                <a href="https://github.com/moja-global/About_moja_global" class="download" target="_blank">About Moja Global</a>
+
+            </li>
+            <li>
+                <a href="/about_us" class="article">About Us</a>
+            </li>
+           <br/>
+           <br/>
+           <li>
+               <details open>
+                   <summary>Error Messages</summary>
+                   {{- range $key, $value := .ErrorGenericMsg }}
+                       <label>{{.}}</label>
+                   {{ end }}
+               </details>
+           </li>
+        </ul>
+    </nav>
+
+    <!-- Page Content Holder -->
+    <div id="content">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <button type="button" id="sidebarCollapse" class="navbar-btn">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <button class="btn btn-dark d-inline-block d-lg-none ml-auto" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="fas fa-align-justify"></i>
+                </button>
+            </div>
+        </nav>
+        <div class="main">
+            <h2>Load simulation data from your Google sheet</h2>
+            <ul class="list-group" style="width: 100%">
+                {{- range $key, $value := .SheetData }}
+                    <li class="list-group-item">
+                        <form method="post" action="/load_data?type=google">
+                            <button type='submit' name="sheet_id" data-toggle="modal" data-target="#loaderModal" value="{{ .SheetID }}">{{ .SheetName }}</button>
+                        </form>
+                    </li>
+                {{ end }}
+            </ul>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal -->
+<div id="uploadExcelModal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Upload an Excel file</h4>
+                <button type="button" style="background-color: white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form enctype="multipart/form-data" action="/load_data?type=excel" method="post">
+                    <input type="hidden" name="token" value="{{.}}"/>
+                    <input type="file" name="uploadfile"/>
+                    <button type="submit" value="upload" data-toggle="modal" data-target="#loaderModal">Upload</button>
+                </form>
+                <!-- Preview-->
+                <div id='preview'></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="uploadDBModal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Upload a database file</h4>
+                <button type="button" style="background-color: white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form enctype="multipart/form-data" action="/load_data?type=db" method="post">
+                    <input type="hidden" name="token" value="{{.}}"/>
+                    <input type="file" name="uploadfile"/>
+                    <button type="submit" value="upload" data-toggle="modal" data-target="#loaderModal">Upload</button>
+                </form>
+                <!-- Preview-->
+                <div id='preview'></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="uploadJSONModal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Upload a JSON file</h4>
+                <button type="button" style="background-color: white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form enctype="multipart/form-data" action="/load_data?type=json" method="post">
+                    <input type="hidden" name="token" value="{{.}}"/>
+                    <input type="file" name="uploadfile"/>
+                    <button type="submit" value="upload" data-toggle="modal" data-target="#loaderModal">Upload</button>
+                </form>
+                <!-- Preview-->
+                <div id='preview'></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="loaderModal" class="modal fade" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="spinner-border text-success"></div><div style="float: right;">Loading data into your page</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Enteric Fermintation Data</title>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="/assets/js/bootstrap.min.css">
+    <script src="/assets/js/Chart.min.js"></script>
+    <!-- Font Awesome JS -->
+    <script defer src="/assets/js/fontawesome-solid.js"></script>
+    <script defer src="/assets/js/fontawesome.js"></script>
+    <link rel="stylesheet" href="/assets/style.css">
+
+    <!-- external libs from cdnjs -->
+    <link rel="stylesheet" type="text/css" href="/assets/js/cloudflare-c3.min.css">
+    <script type="text/javascript" src="/assets/js/cloudflare-d3.min.js"></script>
+    <script type="text/javascript" src="/assets/js/cloudflare-c3.min.js"></script>
+    <script type="text/javascript" src="/assets/js/cloudflare-jquery.min.js"></script>
+    <script type="text/javascript" src="/assets/js/cloudflare-jquery-ui.min.js"></script>
+    <script type="text/javascript" src="/assets/js/cloudflare-jquery.csv-0.71.min.js"></script>
+    <script src="/assets/js/cloudflare-popper.min.js"></script>
+    <script src="/assets/js/bootstrapcdn-bootstrap.min.js"></script>
+    <script type="text/javascript" src="/assets/js/cdn.datatables-jquery.dataTables.min.js"></script>
+
+    <script src="https://cdn.plot.ly/plotly-basic-latest.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/assets/node_modules/pivottable/dist/pivot.css">
+    <script type="text/javascript" src="/assets/node_modules/pivottable/dist/pivot.js"></script>
+    <script type="text/javascript" src="/assets/node_modules/pivottable/dist/plotly_renderers.js"></script>
+    <script type="text/javascript" src="/assets/node_modules/pivottable/dist/export_renderers.js"></script>
+    <script type="text/javascript" src="/assets/node_modules/pivottable/dist/d3_renderers.js"></script>
+    <script type="text/javascript" src="/assets/node_modules/pivottable/dist/c3_renderers.js"></script>
+</head>
+<body>
+<script>
+    var efp_result_local = [];
+    var ef_result_local = [];
+
+    var efp_result_count = 0;
+    var ef_result_count = 0;
+    var packageData = {};
+    var pageEndEFParameter = 12;
+    var pageEndEFFactor = 12;
+    var pageEndAnimalNumber = 12;
+    var pageEndTemperatureLocation = 12;
+
+    function getLocalDate(utcDate) {
+        var localDate = new Date(utcDate);
+        document.write(localDate.toLocaleString());
+    }
+    $(document).ready(function () {
+        $('#sidebarCollapse').on('click', function () {
+            $('#sidebar').toggleClass('active');
+            $(this).toggleClass('active');
+        });
+        $('[data-toggle="tooltip"]').tooltip();
+        $( "#google_li" ).toggle({{.GoogleAuthenticated}})
+
+        packageData["setting_data"] = {{.SettingData}};
+        packageData["system_data"] = {{.SystemData}};
+        packageData["location_data"] = {{.LocationData}};
+        packageData["animal_class_data"] = {{.AnimalClassData}};
+        packageData["temperature_location_data"] = {{.TemperatureLocationData}};
+        packageData["animal_number_data"] = {{.AnimalNumberData}};
+        packageData["enteric_ferm_emission_factor_parameter_data"] = {{.EntericFermEFParameterData}};
+        packageData["error_record"] = {{.ErrorRecordData}};
+        packageData["error_generic"] = {{.ErrorGenericMsg}};
+
+        items_table_error_summary = document.getElementById('error_summary');
+        err_summary = packageData["error_generic"]
+        if(err_summary!=null && err_summary.length > 0){
+            for (i = 0; i < err_summary.length; i++){
+                items_table_error_summary.innerHTML+= '<label>'+err_summary[i]+'</label>';
+            }
+        }
+
+        items_table_factor_parameter = document.getElementById('items_table_factor_parameter');
+        items_table_factor_parameter.innerHTML = '                            <tr>\n' +
+            '                                <th>Location</th>\n' +
+            '                                <th>System</th>\n' +
+            '                                <th>AnimalClass</th>\n' +
+            '                                <th>Year</th>\n' +
+            '                                <th>Month</th>\n' +
+            '                                <th>Body Weight (Kg)</th>\n' +
+            '                                <th>Mature Weight (Kg)</th>\n' +
+            '                                <th>Daily Weight Gain (Kg)</th>\n' +
+            '                                <th><div data-toggle="tooltip" data-placement="top" title="This should be the decimal value of (days in the month alive)/(total days in the month)">Fraction of Month Alive</div></th>\n' +
+            '                                <th>CF (MJ day<sup>-1</sup>  kg<sup>-1</sup>)</th>\n' +
+            '                                <th>C</th>\n' +
+            '                                <th>CA</th>\n' +
+            '                                <th><div data-toggle="tooltip" data-placement="top" title="This should be milk production of a livestock instead of milk production of a livestock group">Milk Production</div></th>\n' +
+            '                                <th>Fat Content (%)</th>\n' +
+            '                                <th>C Pregnancy</th>\n' +
+            '                                <th>Proportion Animal Class Pregnant</th>\n' +
+            '                                <th>Proportion Animal Class Lactating</th>\n' +
+            '                                <th><div data-toggle="tooltip" data-placement="top" title="This should be the decimal value of (days in the month lactating)/(total days in the month)">Fraction of Month Lactating</div></th>\n' +
+            '                                <th>Hours Worked</th>\n' +
+            '                                <th>DE (%)</th>\n' +
+            '                                <th>YM</th>\n' +
+            '                            </tr>'
+        efp_result_local = packageData["enteric_ferm_emission_factor_parameter_data"].slice(0,pageEndEFParameter);
+        if(efp_result_local!=null && efp_result_local.length > 0){
+            efp_result_count = efp_result_local.length;
+            for (i = 0; i < efp_result_local.length; i++){
+                items_table_factor_parameter.innerHTML+= '<tr><td>' +
+                    efp_result_local[i]["location"] + '</td><td>' +
+                    efp_result_local[i]["system"] + '</td><td>' +
+                    efp_result_local[i]["animal_class"] + '</td><td>' +
+                    efp_result_local[i]["year"] + '</td><td>' +
+                    efp_result_local[i]["month"] + '</td><td>' +
+                    efp_result_local[i]["body_weight"] + '</td><td>' +
+                    efp_result_local[i]["mature_weight"] + '</td><td>' +
+                    efp_result_local[i]["daily_weight_gain"] + '</td><td>' +
+                    efp_result_local[i]["fraction_of_month_alive"] + '</td><td>' +
+                    efp_result_local[i]["cf"] + '</td><td>' +
+                    efp_result_local[i]["c"] + '</td><td>' +
+                    efp_result_local[i]["ca"] + '</td><td>' +
+                    efp_result_local[i]["milk_prod"] + '</td><td>' +
+                    efp_result_local[i]["fat_content"] + '</td><td>' +
+                    efp_result_local[i]["c_pregnancy"] + '</td><td>' +
+                    efp_result_local[i]["proportion_animal_class_pregnant"] + '</td><td>' +
+                    efp_result_local[i]["proportion_animal_class_lactating"] + '</td><td>' +
+                    efp_result_local[i]["fraction_of_month_lactating"] + '</td><td>' +
+                    efp_result_local[i]["hours_worked"] + '</td><td>' +
+                    efp_result_local[i]["de"] + '</td><td>' +
+                    efp_result_local[i]["ym"] + '</td>' +
+                    '</tr>';
+            }
+        }
+
+
+        items_table_animal_number = document.getElementById('items_table_animal_number');
+        items_table_animal_number.innerHTML = '<tr>\n' +
+            '    <th>Location</th>\n' +
+            '    <th>System</th>\n' +
+            '    <th>AnimalClass</th>\n' +
+            '    <th>Year</th>\n' +
+            '    <th><div data-toggle="tooltip" data-placement="top" title="We accept month from 1-12 or month 0 (this option copies the value from the previous month for any missing months)">Month</div></th>\n' +
+            '    <th>Animal Number</th>\n' +
+            '</tr>'
+        animal_num_result_local = packageData["animal_number_data"].slice(0,pageEndAnimalNumber);
+        if(animal_num_result_local!=null && animal_num_result_local.length > 0){
+            animal_num_result_count = animal_num_result_local.length;
+            for (i = 0; i < animal_num_result_local.length; i++){
+                items_table_animal_number.innerHTML+= '<tr><td>' +
+                    animal_num_result_local[i]["location"] + '</td><td>'+
+                    animal_num_result_local[i]["system"] + '</td><td>'+
+                    animal_num_result_local[i]["animal_class"] + '</td><td>'+
+                    animal_num_result_local[i]["year"] + '</td><td>'+
+                    animal_num_result_local[i]["month"] + '</td><td>'+
+                    animal_num_result_local[i]["animal_number"] + '</td>'+
+                    '</tr>';
+            }
+        }
+
+        items_table_temperature_location = document.getElementById('items_table_temperature_location');
+        items_table_temperature_location.innerHTML = '<tr>\n' +
+            '    <th>Location</th>\n' +
+            '    <th>Year</th>\n' +
+            '    <th><div data-toggle="tooltip" data-placement="top" title="The simulation runner will automatically copy the temperature from the previous month for any missing months">Month</div></th>\n' +
+            '    <th><div data-toggle="tooltip" data-placement="top" title="Average temperature in the area of the month of the year">Average Temperature In Cold Season</div></th>\n' +
+            '</tr>'
+        temp_location_result_local = packageData["temperature_location_data"].slice(0,pageEndTemperatureLocation);
+        if(temp_location_result_local!=null && temp_location_result_local.length > 0){
+            temp_location_result_count = temp_location_result_local.length;
+            for (i = 0; i < temp_location_result_local.length; i++){
+                items_table_temperature_location.innerHTML+= '<tr><td>' +
+                    temp_location_result_local[i]["location"] + '</td><td>'+
+                    temp_location_result_local[i]["year"] + '</td><td>'+
+                    temp_location_result_local[i]["month"] + '</td><td>'+
+                    temp_location_result_local[i]["avg_temp"] + '</td>'+
+                    '</tr>';
+            }
+        }
+    });
+
+    function loadMoreTemperatureLocationData(){
+        pageEndTemperatureLocation+=12;
+        items_table_temperature_location = document.getElementById('items_table_temperature_location');
+        items_table_temperature_location.innerHTML = '<tr>\n' +
+            '    <th>Location</th>\n' +
+            '    <th>Year</th>\n' +
+            '    <th><div data-toggle="tooltip" data-placement="top" title="The simulation runner will automatically copy the temperature from the previous month for any missing months">Month</div></th>\n' +
+            '    <th><div data-toggle="tooltip" data-placement="top" title="Average temperature in the area of the month of the year">Average Temperature In Cold Season</div></th>\n' +
+            '</tr>'
+        temp_location_result_local = packageData["temperature_location_data"].slice(0,pageEndTemperatureLocation);
+        if(temp_location_result_local!=null && temp_location_result_local.length > 0){
+            temp_location_result_count = temp_location_result_local.length;
+            for (i = 0; i < temp_location_result_local.length; i++){
+                items_table_temperature_location.innerHTML+= '<tr><td>' +
+                    temp_location_result_local[i]["location"] + '</td><td>'+
+                    temp_location_result_local[i]["year"] + '</td><td>'+
+                    temp_location_result_local[i]["month"] + '</td><td>'+
+                    temp_location_result_local[i]["avg_temp"] + '</td>'+
+                    '</tr>';
+            }
+        }
+    }
+
+    function loadMoreAnimalNumberData(){
+        pageEndAnimalNumber+=12;
+        items_table_animal_number = document.getElementById('items_table_animal_number');
+        items_table_animal_number.innerHTML = '<tr>\n' +
+            '    <th>Location</th>\n' +
+            '    <th>System</th>\n' +
+            '    <th>AnimalClass</th>\n' +
+            '    <th>Year</th>\n' +
+            '    <th><div data-toggle="tooltip" data-placement="top" title="We accept month from 1-12 or month 0 (this option copies the value from the previous month for any missing months)">Month</div></th>\n' +
+            '    <th>Animal Number</th>\n' +
+            '</tr>'
+        animal_num_result_local = packageData["animal_number_data"].slice(0,pageEndAnimalNumber);
+        if(animal_num_result_local!=null && animal_num_result_local.length > 0){
+            animal_num_result_count = animal_num_result_local.length;
+            for (i = 0; i < animal_num_result_local.length; i++){
+                items_table_animal_number.innerHTML+= '<tr><td>' +
+                    animal_num_result_local[i]["location"] + '</td><td>'+
+                    animal_num_result_local[i]["system"] + '</td><td>'+
+                    animal_num_result_local[i]["animal_class"] + '</td><td>'+
+                    animal_num_result_local[i]["year"] + '</td><td>'+
+                    animal_num_result_local[i]["month"] + '</td><td>'+
+                    animal_num_result_local[i]["animal_number"] + '</td>'+
+                    '</tr>';
+            }
+        }
+    }
+
+    function loadMoreEFParameterData(){
+        pageEndEFParameter+=12;
+        items_table_factor_parameter = document.getElementById('items_table_factor_parameter');
+        items_table_factor_parameter.innerHTML = '                            <tr>\n' +
+            '                                <th>Location</th>\n' +
+            '                                <th>System</th>\n' +
+            '                                <th>AnimalClass</th>\n' +
+            '                                <th>Year</th>\n' +
+            '                                <th>Month</th>\n' +
+            '                                <th>Body Weight (Kg)</th>\n' +
+            '                                <th>Mature Weight (Kg)</th>\n' +
+            '                                <th>Daily Weight Gain (Kg)</th>\n' +
+            '                                <th><div data-toggle="tooltip" data-placement="top" title="This should be the decimal value of (days in the month alive)/(total days in the month)">Fraction of Month Alive</div></th>\n' +
+            '                                <th>CF (MJ day<sup>-1</sup>  kg<sup>-1</sup>)</th>\n' +
+            '                                <th>C</th>\n' +
+            '                                <th>CA</th>\n' +
+            '                                <th><div data-toggle="tooltip" data-placement="top" title="This should be milk production of a livestock instead of milk production of a livestock group">Milk Production</div></th>\n' +
+            '                                <th>Fat Content (%)</th>\n' +
+            '                                <th>C Pregnancy</th>\n' +
+            '                                <th>Proportion Animal Class Pregnant</th>\n' +
+            '                                <th>Proportion Animal Class Lactating</th>\n' +
+            '                                <th><div data-toggle="tooltip" data-placement="top" title="This should be the decimal value of (days in the month lactating)/(total days in the month)">Fraction of Month Lactating</div></th>\n' +
+            '                                <th>Hours Worked</th>\n' +
+            '                                <th>DE (%)</th>\n' +
+            '                                <th>YM</th>\n' +
+            '                            </tr>'
+        efp_result_local = packageData["enteric_ferm_emission_factor_parameter_data"].slice(0,pageEndEFParameter);
+        if(efp_result_local!=null && efp_result_local.length > 0){
+            efp_result_count = efp_result_local.length;
+            for (i = 0; i < efp_result_local.length; i++){
+                items_table_factor_parameter.innerHTML+= '<tr><td>' +
+                    efp_result_local[i]["location"] + '</td><td>' +
+                    efp_result_local[i]["system"] + '</td><td>' +
+                    efp_result_local[i]["animal_class"] + '</td><td>' +
+                    efp_result_local[i]["year"] + '</td><td>' +
+                    efp_result_local[i]["month"] + '</td><td>' +
+                    efp_result_local[i]["body_weight"] + '</td><td>' +
+                    efp_result_local[i]["mature_weight"] + '</td><td>' +
+                    efp_result_local[i]["daily_weight_gain"] + '</td><td>' +
+                    efp_result_local[i]["fraction_of_month_alive"] + '</td><td>' +
+                    efp_result_local[i]["cf"] + '</td><td>' +
+                    efp_result_local[i]["c"] + '</td><td>' +
+                    efp_result_local[i]["ca"] + '</td><td>' +
+                    efp_result_local[i]["milk_prod"] + '</td><td>' +
+                    efp_result_local[i]["fat_content"] + '</td><td>' +
+                    efp_result_local[i]["c_pregnancy"] + '</td><td>' +
+                    efp_result_local[i]["proportion_animal_class_pregnant"] + '</td><td>' +
+                    efp_result_local[i]["proportion_animal_class_lactating"] + '</td><td>' +
+                    efp_result_local[i]["fraction_of_month_lactating"] + '</td><td>' +
+                    efp_result_local[i]["hours_worked"] + '</td><td>' +
+                    efp_result_local[i]["de"] + '</td><td>' +
+                    efp_result_local[i]["ym"] + '</td>' +
+                    '</tr>';
+            }
+        }
+    }
+
+    function loadMoreEFFactorData(){
+        pageEndEFFactor+=12;
+        items_table_ef_result = document.getElementById('items_table_ef_result');
+        items_table_ef_result.innerHTML = '                            <tr>\n' +
+            '                                <th>Location</th>\n' +
+            '                                <th>System</th>\n' +
+            '                                <th>AnimalClass</th>\n' +
+            '                                <th>Year</th>\n' +
+            '                                <th>Month</th>\n' +
+            '                                <th>Calculated EF (Kg CH<sub>4</sub> head<sup>-1</sup> year<sup>-1</sup>)</th>\n' +
+            '                                <th>Monthly Average Population (head month<sup>-1</sup>)</th>\n' +
+            '                                <th>Coefficient for Calculating Net Energy for Maintenance</th>\n' +
+            '                                <th>Net Energy for Maintenance (MJ day<sup>-1</sup>)</th>\n' +
+            '                                <th>Net Energy for Activity for Cattle and Buffalo (MJ day<sup>-1</sup>)</th>\n' +
+            '                                <th>Net Energy for Growth for Cattle and Buffalo (MJ day<sup>-1</sup>)</th>\n' +
+            '                                <th>Net Energy for Lactation for Beef, Dairy and Buffalo (MJ day<sup>-1</sup>)</th>\n' +
+            '                                <th>Net Energy for Work for Cattle and Buffalo (MJ day<sup>-1</sup>)</th>\n' +
+            '                                <th>Net Energy for Pregnancy for Cattle, Buffalo and Sheep (MJ day<sup>-1</sup>)</th>\n' +
+            '                                <th>Ratio of Net Energy Available in a Diet for Maintenance to Digestible Energy Consumed</th>\n' +
+            '                                <th>Ratio of Net Energy Available for Growth in a Diet to Digestible Energy Consumed</th>\n' +
+            '                                <th>Gross Energy for Cattle, Buffalo, Sheep (MJ day<sup>-1</sup>)</th>\n' +
+            '                                <th>Enteric Fermentation Emissions from a Livestock Category (Gg CH<sub>4</sub> month<sup>-1</sup>)</th>\n' +
+            '                            </tr>'
+        ef_result_local = packageData["enteric_emission_factor_data"].slice(0,pageEndEFFactor);
+        if(ef_result_local!=null && ef_result_local.length > 0){
+            ef_result_count = ef_result_local.length;
+            for (i = 0; i < ef_result_local.length; i++){
+                items_table_ef_result.innerHTML+= '<tr><td>' +
+                    ef_result_local[i]["location"] + '</td><td>' +
+                    ef_result_local[i]["system"] + '</td><td>' +
+                    ef_result_local[i]["animal_class"] + '</td><td>' +
+                    ef_result_local[i]["year"] + '</td><td>' +
+                    ef_result_local[i]["month"] + '</td><td>' +
+                    ef_result_local[i]["calculated_ef"] + '</td><td>' +
+                    ef_result_local[i]["monthly_average_population"] + '</td><td>' +
+                    ef_result_local[i]["coefficient_for_calculating_net_energy_for_maintenance"] + '</td><td>' +
+                    ef_result_local[i]["net_energy_for_maintenance"] + '</td><td>' +
+                    ef_result_local[i]["net_energy_for_activity_for_cattle_and_buffalo"] + '</td><td>' +
+                    ef_result_local[i]["net_energy_for_growth_for_cattle_and_buffalo"] + '</td><td>' +
+                    ef_result_local[i]["net_energy_for_lactation_for_beef_dairy_and_buffalo"] + '</td><td>' +
+                    ef_result_local[i]["net_energy_for_work_for_cattle_and_buffalo"] + '</td><td>' +
+                    ef_result_local[i]["net_energy_for_pregnancy_for_cattle_buffalo_and_sheep"] + '</td><td>' +
+                    ef_result_local[i]["ratio_of_net_energy_available_in_a_diet_for_maintenance_to_digestible_energy_consumed"] + '</td><td>' +
+                    ef_result_local[i]["ratio_of_net_energy_available_for_growth_in_a_diet_to_digestible_energy_consumed"] + '</td><td>' +
+                    ef_result_local[i]["gross_energy_for_cattle_buffalo_sheep"] + '</td><td>' +
+                    ef_result_local[i]["enteric_fermentation_emissions_from_a_livestock_category"] + '</td>' +
+                    '</tr>';
+            }
+        }
+    }
+
+    function storeGoogleDrive(){
+        $('#saveToDriveModal').modal('show');
+        setTimeout(function(){
+            $.ajax({
+                url: 'export_simulation?type=google',
+                dataType: 'json',
+                type: 'post',
+                contentType: 'application/json',
+                data: JSON.stringify(packageData),
+                processData: false,
+                success: function( data, textStatus, jQxhr ){
+                    // Do nothing
+                    $('#saveToDriveModal').modal('hide');
+                },
+                error: function( jqXhr, textStatus, errorThrown ){
+                    $('#saveToDriveModal').modal('hide');
+                    window.alert(jqXhr.responseText)
+                }
+            });
+        },2000);
+    }
+
+    function store(url, type, extension){
+        $('#saveToDriveModal').modal('show');
+        var a = document.createElement("a");
+        document.body.appendChild(a);
+        a.style = "display: none";
+        var xhr = new XMLHttpRequest();
+        setTimeout(function(){
+            xhr.open('POST', url, true);
+            xhr.responseType = "arraybuffer";
+            xhr.onload = function () {
+                if(xhr.status!=500){
+                    var arrayBuffer = xhr.response;
+                    if (arrayBuffer) {
+                        var blob = new Blob([arrayBuffer], {type: type});
+                        var objectURL = window.URL.createObjectURL(blob);
+                        a.href = objectURL;
+                        a.download = Date.now()+"."+extension;
+                        a.click();
+                        window.URL.revokeObjectURL(objectURL);
+                    }
+                } else{
+                    var message = xhr.responseText;
+                    window.alert(message)
+                }
+                $('#saveToDriveModal').modal('hide');
+            };
+            xhr.send(JSON.stringify(packageData));
+        },2000);
+    }
+
+    //Note: we only load EF parameters after simulation because it is sorted after simulation run. Also, we only do pagination on these two at the moment
+    //because they are the only one that expand exponentially at the moment
+    function runSimulation(){
+        $('#loadSimulationModal').modal('show');
+        //This is to let the spinner has the chance to load properly before closing down
+        setTimeout(function(){
+            $.ajax({
+                url: 'run_simulation',
+                dataType: 'json',
+                type: 'post',
+                contentType: 'application/json',
+                data: JSON.stringify(packageData),
+                processData: false,
+                success: function( data, textStatus, jQxhr ){
+                    $('#loadSimulationModal').modal('hide');
+                    packageData["temperature_location_data"] = data["temperature_location_data"];
+                    packageData["animal_number_data"] = data["animal_number_data"];
+                    packageData["enteric_ferm_emission_factor_parameter_data"] = data["enteric_ferm_emission_factor_parameter_data"];
+                    packageData["enteric_emission_factor_data_user"] = data["enteric_emission_factor_data_user"];
+                    packageData["enteric_emission_factor_data"] = data["enteric_emission_factor_data"];
+                    packageData["error_record"] = data["error_record"];
+                    packageData["error_generic"] = data["error_generic"];
+
+                    result = packageData["enteric_emission_factor_data_user"];
+                    if(result!=null && result.length > 0){
+                        $("#pills-pivot-tab-nav").css("visibility", "visible");
+                    }
+                    var renderers = $.extend($.pivotUtilities.renderers,
+                        $.pivotUtilities.plotly_renderers,
+                        $.pivotUtilities.export_renderers);
+                    if(result!=null && result.length >0){
+                        $("#output").pivotUI(result, {
+                            renderers: renderers,
+                            cols: ["year"],
+                            rows: ["system","animal_class","parent_class"],
+                            aggregatorName: "Sum",
+                            vals: ["enteric_fermentation_emissions_from_a_livestock_category"],
+                            rendererName: "Stacked Bar Chart",
+                            sorters: {
+                                "year": function(a,b){ return a-b; } //sort backwards
+                            }
+                        });
+                    }
+
+                    items_table_factor_parameter = document.getElementById('items_table_factor_parameter');
+                    items_table_factor_parameter.innerHTML = '                            <tr>\n' +
+                        '                                <th>Location</th>\n' +
+                        '                                <th>System</th>\n' +
+                        '                                <th>AnimalClass</th>\n' +
+                        '                                <th>Year</th>\n' +
+                        '                                <th>Month</th>\n' +
+                        '                                <th>Body Weight (Kg)</th>\n' +
+                        '                                <th>Mature Weight (Kg)</th>\n' +
+                        '                                <th>Daily Weight Gain (Kg)</th>\n' +
+                        '                                <th><div data-toggle="tooltip" data-placement="top" title="This should be the decimal value of (days in the month alive)/(total days in the month)">Fraction of Month Alive</div></th>\n' +
+                        '                                <th>CF (MJ day<sup>-1</sup> kg<sup>-1</sup>)</th>\n' +
+                        '                                <th>C</th>\n' +
+                        '                                <th>CA</th>\n' +
+                        '                                <th><div data-toggle="tooltip" data-placement="top" title="This should be milk production of a livestock instead of milk production of a livestock group">Milk Production</div></th>\n' +
+                        '                                <th>Fat Content (%)</th>\n' +
+                        '                                <th>C Pregnancy</th>\n' +
+                        '                                <th>Proportion Animal Class Pregnant</th>\n' +
+                        '                                <th>Proportion Animal Class Lactating</th>\n' +
+                        '                                <th><div data-toggle="tooltip" data-placement="top" title="This should be the decimal value of (days in the month lactating)/(total days in the month)">Fraction of Month Lactating</div></th>\n' +
+                        '                                <th>Hours Worked</th>\n' +
+                        '                                <th>DE (%)</th>\n' +
+                        '                                <th>YM</th>\n' +
+                        '                            </tr>'
+                    efp_result_local = packageData["enteric_ferm_emission_factor_parameter_data"].slice(0,pageEndEFParameter);
+                    if(efp_result_local!=null && efp_result_local.length > 0){
+                        efp_result_count = efp_result_local.length;
+                        for (i = 0; i < efp_result_local.length; i++){
+                            items_table_factor_parameter.innerHTML+= '<tr><td>' +
+                                efp_result_local[i]["location"] + '</td><td>' +
+                                efp_result_local[i]["system"] + '</td><td>' +
+                                efp_result_local[i]["animal_class"] + '</td><td>' +
+                                efp_result_local[i]["year"] + '</td><td>' +
+                                efp_result_local[i]["month"] + '</td><td>' +
+                                efp_result_local[i]["body_weight"] + '</td><td>' +
+                                efp_result_local[i]["mature_weight"] + '</td><td>' +
+                                efp_result_local[i]["daily_weight_gain"] + '</td><td>' +
+                                efp_result_local[i]["fraction_of_month_alive"] + '</td><td>' +
+                                efp_result_local[i]["cf"] + '</td><td>' +
+                                efp_result_local[i]["c"] + '</td><td>' +
+                                efp_result_local[i]["ca"] + '</td><td>' +
+                                efp_result_local[i]["milk_prod"] + '</td><td>' +
+                                efp_result_local[i]["fat_content"] + '</td><td>' +
+                                efp_result_local[i]["c_pregnancy"] + '</td><td>' +
+                                efp_result_local[i]["proportion_animal_class_pregnant"] + '</td><td>' +
+                                efp_result_local[i]["proportion_animal_class_lactating"] + '</td><td>' +
+                                efp_result_local[i]["fraction_of_month_lactating"] + '</td><td>' +
+                                efp_result_local[i]["hours_worked"] + '</td><td>' +
+                                efp_result_local[i]["de"] + '</td><td>' +
+                                efp_result_local[i]["ym"] + '</td>' +
+                                '</tr>';
+                        }
+                    }
+
+                    items_table_ef_result = document.getElementById('items_table_ef_result');
+                    items_table_ef_result.innerHTML = '                            <tr>\n' +
+                        '                                <th>Location</th>\n' +
+                        '                                <th>System</th>\n' +
+                        '                                <th>AnimalClass</th>\n' +
+                        '                                <th>Year</th>\n' +
+                        '                                <th>Month</th>\n' +
+                        '                                <th>Calculated EF (Kg CH<sub>4</sub> head<sup>-1</sup> year<sup>-1</sup>)</th>\n' +
+                        '                                <th>Monthly Average Population (head month<sup>-1</sup>)</th>\n' +
+                        '                                <th>Coefficient for Calculating Net Energy for Maintenance</th>\n' +
+                        '                                <th>Net Energy for Maintenance (MJ day<sup>-1</sup>)</th>\n' +
+                        '                                <th>Net Energy for Activity for Cattle and Buffalo (MJ day<sup>-1</sup>)</th>\n' +
+                        '                                <th>Net Energy for Growth for Cattle and Buffalo (MJ day<sup>-1</sup>)</th>\n' +
+                        '                                <th>Net Energy for Lactation for Beef, Dairy and Buffalo (MJ day<sup>-1</sup>)</th>\n' +
+                        '                                <th>Net Energy for Work for Cattle and Buffalo (MJ day<sup>-1</sup>)</th>\n' +
+                        '                                <th>Net Energy for Pregnancy for Cattle, Buffalo and Sheep (MJ day<sup>-1</sup>)</th>\n' +
+                        '                                <th>Ratio of Net Energy Available in a Diet for Maintenance to Digestible Energy Consumed</th>\n' +
+                        '                                <th>Ratio of Net Energy Available for Growth in a Diet to Digestible Energy Consumed</th>\n' +
+                        '                                <th>Gross Energy for Cattle, Buffalo, Sheep (MJ day<sup>-1</sup>)</th>\n' +
+                        '                                <th>Enteric Fermentation Emissions from a Livestock Category (Gg CH<sub>4</sub> year<sup>-1</sup>)</th>\n' +
+                        '                            </tr>'
+                    ef_result_local = packageData["enteric_emission_factor_data"].slice(0,pageEndEFFactor);
+                    if(ef_result_local!=null && ef_result_local.length > 0){
+                        ef_result_count = ef_result_local.length;
+                        $("#pills-eef-tab-nav").css("visibility", "visible");
+                        for (i = 0; i < ef_result_local.length; i++){
+                            items_table_ef_result.innerHTML+= '<tr><td>' +
+                                ef_result_local[i]["location"] + '</td><td>' +
+                                ef_result_local[i]["system"] + '</td><td>' +
+                                ef_result_local[i]["animal_class"] + '</td><td>' +
+                                ef_result_local[i]["year"] + '</td><td>' +
+                                ef_result_local[i]["month"] + '</td><td>' +
+                                ef_result_local[i]["calculated_ef"] + '</td><td>' +
+                                ef_result_local[i]["monthly_average_population"] + '</td><td>' +
+                                ef_result_local[i]["coefficient_for_calculating_net_energy_for_maintenance"] + '</td><td>' +
+                                ef_result_local[i]["net_energy_for_maintenance"] + '</td><td>' +
+                                ef_result_local[i]["net_energy_for_activity_for_cattle_and_buffalo"] + '</td><td>' +
+                                ef_result_local[i]["net_energy_for_growth_for_cattle_and_buffalo"] + '</td><td>' +
+                                ef_result_local[i]["net_energy_for_lactation_for_beef_dairy_and_buffalo"] + '</td><td>' +
+                                ef_result_local[i]["net_energy_for_work_for_cattle_and_buffalo"] + '</td><td>' +
+                                ef_result_local[i]["net_energy_for_pregnancy_for_cattle_buffalo_and_sheep"] + '</td><td>' +
+                                ef_result_local[i]["ratio_of_net_energy_available_in_a_diet_for_maintenance_to_digestible_energy_consumed"] + '</td><td>' +
+                                ef_result_local[i]["ratio_of_net_energy_available_for_growth_in_a_diet_to_digestible_energy_consumed"] + '</td><td>' +
+                                ef_result_local[i]["gross_energy_for_cattle_buffalo_sheep"] + '</td><td>' +
+                                ef_result_local[i]["enteric_fermentation_emissions_from_a_livestock_category"] + '</td>' +
+                                '</tr>';
+                        }
+                    }
+
+                    items_table_temperature_location = document.getElementById('items_table_temperature_location');
+                    items_table_temperature_location.innerHTML = '<tr>\n' +
+                        '    <th>Location</th>\n' +
+                        '    <th>Year</th>\n' +
+                        '    <th><div data-toggle="tooltip" data-placement="top" title="The simulation runner will automatically copy the temperature from the previous month for any missing months">Month</div></th>\n' +
+                        '    <th><div data-toggle="tooltip" data-placement="top" title="Average temperature in the area of the month of the year">Average Temperature In Cold Season</div></th>\n' +
+                        '</tr>'
+                    temp_location_result_local = packageData["temperature_location_data"].slice(0,pageEndTemperatureLocation);
+                    if(temp_location_result_local!=null && temp_location_result_local.length > 0){
+                        temp_location_result_count = temp_location_result_local.length;
+                        for (i = 0; i < temp_location_result_local.length; i++){
+                            items_table_temperature_location.innerHTML+= '<tr><td>' +
+                                temp_location_result_local[i]["location"] + '</td><td>'+
+                                temp_location_result_local[i]["year"] + '</td><td>'+
+                                temp_location_result_local[i]["month"] + '</td><td>'+
+                                temp_location_result_local[i]["avg_temp"] + '</td>'+
+                                '</tr>';
+                        }
+                    }
+
+                    items_table_animal_number = document.getElementById('items_table_animal_number');
+                    items_table_animal_number.innerHTML = '<tr>\n' +
+                        '    <th>Location</th>\n' +
+                        '    <th>System</th>\n' +
+                        '    <th>AnimalClass</th>\n' +
+                        '    <th>Year</th>\n' +
+                        '    <th><div data-toggle="tooltip" data-placement="top" title="We accept month from 1-12 or month 0 (this option copies the value from the previous month for any missing months)">Month</div></th>\n' +
+                        '    <th>Animal Number</th>\n' +
+                        '</tr>'
+                    animal_num_result_local = packageData["animal_number_data"].slice(0,pageEndAnimalNumber);
+                    if(animal_num_result_local!=null && animal_num_result_local.length > 0){
+                        animal_num_result_count = animal_num_result_local.length;
+                        for (i = 0; i < animal_num_result_local.length; i++){
+                            items_table_animal_number.innerHTML+= '<tr><td>' +
+                                animal_num_result_local[i]["location"] + '</td><td>'+
+                                animal_num_result_local[i]["system"] + '</td><td>'+
+                                animal_num_result_local[i]["animal_class"] + '</td><td>'+
+                                animal_num_result_local[i]["year"] + '</td><td>'+
+                                animal_num_result_local[i]["month"] + '</td><td>'+
+                                animal_num_result_local[i]["animal_number"] + '</td>'+
+                                '</tr>';
+                        }
+                    }
+                },
+                error: function( jqXhr, textStatus, errorThrown ){
+                    $('#loadSimulationModal').modal('hide');
+                    window.alert(jqXhr.responseText);
+                }
+            });
+        }, 2000);
+    }
+</script>
+
+<div class="wrapper">
+    <!-- Sidebar Holder -->
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <h3>
+                FLINT
+            </h3>
+            <p>Enteric Fermentation</p>
+        </div>
+
+        <ul class="list-unstyled components">
+            <li>
+                <form method="get" action="/index">
+                    <button type='submit'>Back to main page</button>
+                </form>
+            </li>
+            <li>
+                <button onclick="runSimulation()">Run simulation</button>
+            </li>
+            <li>
+                <button onclick="store('export_simulation?type=json','application/json; charset=UTF-8','json')">
+                    <div data-toggle="tooltip" data-placement="right" title="Save and download the result in a json file">Save to a json file</div>
+                </button>
+            </li>
+            <li>
+                <button onclick="store('export_simulation?type=db','application/vnd.sqlite3','db')">
+                    <div data-toggle="tooltip" data-placement="right" title="Save and download the result in a json file">Save to a db file</div>
+                </button>
+            </li>
+            <li>
+                <button onclick="store('export_simulation?type=excel','application/octet-stream','xlsx')">
+                    <div data-toggle="tooltip" data-placement="right" title="Save and download the result in a json file">Save to a Excel file</div>
+                </button>
+            </li>
+            <li id="google_li">
+                <button onclick="storeGoogleDrive()">
+                    <div data-toggle="tooltip" data-placement="right" title="Save and download the result into Google sheet. The name of the sheet will be the current time">Save to google drive</div>
+                </button>
+            </li>
+            <li>
+                <form method="post" action="/logout_google">
+                    <button type="submit">Logout</button>
+                </form>
+            </li>
+        </ul>
+
+        <ul class="list-unstyled CTAs">
+            <li>
+                <a href="https://github.com/moja-global/About_moja_global" class="download" target="_blank">About Moja Global</a>
+            </li>
+            <li>
+                <a href="/about_us" class="article">About Us</a>
+            </li>
+            <br/>
+            <br/>
+            <li>
+                <details open>
+                    <summary id="error_summary">Error Messages</summary>
+                </details>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Page Content Holder -->
+    <div id="content">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <button type="button" id="sidebarCollapse" class="navbar-btn">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <button class="btn btn-dark d-inline-block d-lg-none ml-auto" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <i class="fas fa-align-justify"></i>
+                </button>
+            </div>
+        </nav>
+
+        <div class="main">
+            <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="pills-settings-tab" data-toggle="pill" href="#pills-settings" role="tab" aria-controls="pills-home" aria-selected="true">Settings</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="pills-systems-tab" data-toggle="pill" href="#pills-systems" role="tab" aria-controls="pills-profile" aria-selected="false">Systems</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="pills-locations-tab" data-toggle="pill" href="#pills-locations" role="tab" aria-controls="pills-contact" aria-selected="false">Locations</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="pills-animal-classes-tab" data-toggle="pill" href="#pills-animal-classes" role="tab" aria-controls="pills-contact" aria-selected="false">Animal Classes</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="pills-temp-locations-tab" data-toggle="pill" href="#pills-temp-locations" role="tab" aria-controls="pills-contact" aria-selected="false">Temperature Locations</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="pills-animal-numbers-tab" data-toggle="pill" href="#pills-animal-numbers" role="tab" aria-controls="pills-contact" aria-selected="false">Animal Numbers</a>
+                </li>
+                <li class="nav-item" id="pills-effe-tab-nav">
+                    <a class="nav-link" id="pills-effe-param-tab" data-toggle="pill" href="#pills-effe-param" role="tab" aria-controls="pills-contact" aria-selected="false">Enteric Ferm EF Parameters</a>
+                </li>
+                <li class="nav-item" id="pills-eef-tab-nav">
+                    <a class="nav-link" id="pills-eef-tab" data-toggle="pill" href="#pills-eef" role="tab" aria-controls="pills-contact" aria-selected="false">Enteric Emission Factors</a>
+                </li>
+                <li class="nav-item" id="pills-pivot-tab-nav">
+                    <a class="nav-link" id="pills-pivot-tab" data-toggle="pill" href="#pills-pivot" role="tab" aria-controls="pills-contact" aria-selected="false">Pivot table</a>
+                </li>
+            </ul>
+            <div class="tab-content" id="pills-tabContent">
+                <div class="tab-pane fade show active" id="pills-settings" role="tabpanel" aria-labelledby="pills-settings-tab">
+                    <div class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                        <table>
+                            <tr>
+                                <th>Key</th>
+                                <th>Value</th>
+                            </tr>
+                            {{- range $key, $value := .SettingData }}
+                                <tr>
+                                    <td>{{ .Key }}</td>
+                                    <td>{{ .Value }}</td>
+                                </tr>
+                            {{ end }}
+                        </table>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="pills-systems" role="tabpanel" aria-labelledby="pills-systems-tab">
+                    <div class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                        <table>
+                            <tr>
+                                <th>Name</th>
+                            </tr>
+                            {{- range $key, $value := .SystemData }}
+                                <tr>
+                                    <td>{{ .Name }}</td>
+                                </tr>
+                            {{ end }}
+                        </table>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="pills-locations" role="tabpanel" aria-labelledby="pills-locations-tab">
+                    <div class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                        <table>
+                            <tr>
+                                <th>Name</th>
+                            </tr>
+                            {{- range $key, $value := .LocationData }}
+                                <tr>
+                                    <td>{{ .Name }}</td>
+                                </tr>
+                            {{ end }}
+                        </table>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="pills-animal-classes" role="tabpanel" aria-labelledby="pills-animal-classes-tab">
+                    <div class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                        <table>
+                            <tr>
+                                <th>Parent Class</th>
+                                <th>Name</th>
+                                <th>Default EF</th>
+                            </tr>
+                            {{- range $key, $value := .AnimalClassData }}
+                                <tr>
+                                    <td>{{ .ParentClass }}</td>
+                                    <td>{{ .Name }}</td>
+                                    <td>{{ .DefaulEF }}</td>
+                                </tr>
+                            {{ end }}
+                        </table>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="pills-temp-locations" role="tabpanel" aria-labelledby="pills-temp-locations-tab">
+                    <div class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                        <table id="items_table_temperature_location">
+                        </table>
+                        <button onclick="loadMoreTemperatureLocationData()">Load More</button>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="pills-animal-numbers" role="tabpanel" aria-labelledby="pills-animal-numbers-tab">
+                    <div class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                        <table id="items_table_animal_number">
+                        </table>
+                        <button onclick="loadMoreAnimalNumberData()">Load More</button>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="pills-effe-param" role="tabpanel" aria-labelledby="pills-effe-param-tab">
+                    <div class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                        <table id="items_table_factor_parameter">
+                        </table>
+                        <button onclick="loadMoreEFParameterData()">Load More</button>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="pills-eef" role="tabpanel" aria-labelledby="pills-eef-tab">
+                    <div class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                        <table id="items_table_ef_result">
+                        </table>
+                        <button onclick="loadMoreEFFactorData()">Load More</button>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="pills-pivot" role="tabpanel" aria-labelledby="pills-pivot-tab">
+                    <div class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                        <div id="output"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="loadSimulationModal" class="modal fade" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="spinner-border text-success"></div><div style="float: right;">Running your simulation</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="saveToDriveModal" class="modal fade" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="spinner-border text-success"></div><div style="float: right;">Saving as a new file</div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

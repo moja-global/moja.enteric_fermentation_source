@@ -1,0 +1,9 @@
+sensitive/
+test.json
+test.sqlite3
+test.xlsx
+.idea
+.DS_Store
+common/handlers-packr.go
+main-packr.go
+packrd
